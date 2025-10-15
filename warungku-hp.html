@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WarungKu - Pembukuan Warung</title>
+    <style>
+        /* RESET & BASE STYLES */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 10px;
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        /* HEADER */
+        header {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .logo i {
+            font-size: 1.8rem;
+        }
+        
+        .logo h1 {
+            font-size: 1.4rem;
+        }
+        
+        .date-display {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        /* DASHBOARD CARDS */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .card-title {
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .card-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        .card-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .sales .card-icon { background: #27ae60; }
+        .expenses .card-icon { background: #e74c3c; }
+        .profit .card-icon { background: #3498db; }
+        .stock-alert .card-icon { background: #f39c12; }
+        
+        /* TABS */
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.8rem;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid #3498db;
+            color: #3498db;
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* FORMS */
+        .content-section {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 12px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px; /* Prevent zoom on iOS */
+            -webkit-appearance: none;
+        }
+        
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        /* TABLES - Mobile Friendly */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            min-width: 500px;
+        }
+        
+        th, td {
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            position: sticky;
+            left: 0;
+        }
+        
+        /* NOTIFICATION */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            background: #27ae60;
+        }
+        
+        /* UTILITY CLASSES */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+        
+        .empty-state i {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #ddd;
+        }
+        
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        
+        /* TOUCH FRIENDLY */
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        .tab:active {
+            background: #f8f9fa;
+        }
+        
+        /* FIX FOR MOBILE */
+        @media (max-width: 480px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                padding: 12px;
+            }
+            
+            .card-value {
+                font-size: 1.1rem;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            input, select {
+                padding: 14px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-store"></i>
+                <h1>WarungKu</h1>
+            </div>
+            <div class="date-display">
+                <i class="far fa-calendar-alt"></i>
+                <span id="current-date">Senin, 1 Januari 2023</span>
+            </div>
+        </header>
+        
+        <div class="dashboard">
+            <div class="card sales">
+                <div class="card-header">
+                    <div class="card-title">PENJUALAN</div>
+                    <div class="card-icon">
+                        <i class="fas fa-cash-register"></i>
+                    </div>
+                </div>
+                <div class="card-value" id="today-sales">Rp 0</div>
+            </div>
+            
+            <div class="card expenses">
+                <div class="card-header">
+                    <div class="card-title">PENGELUARAN</div>
+                    <div class="card-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                </div>
+                <div class="card-value" id="today-expenses">Rp 0</div>
+            </div>
+            
+            <div class="card profit">
+                <div class="card-header">
+                    <div class="card-title">KEUNTUNGAN</div>
+                    <div class="card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="card-value" id="today-profit">Rp 0</div>
+            </div>
+            
+            <div class="card stock-alert">
+                <div class="card-header">
+                    <div class="card-title">STOK MENIPIS</div>
+                    <div class="card-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <div class="card-value" id="low-stock-count">0 item</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="transactions">
+                <i class="fas fa-exchange-alt"></i><br>Transaksi
+            </div>
+            <div class="tab" data-tab="products">
+                <i class="fas fa-boxes"></i><br>Stok
+            </div>
+            <div class="tab" data-tab="reports">
+                <i class="fas fa-chart-bar"></i><br>Laporan
+            </div>
+        </div>
+        
+        <!-- TAB TRANSAKSI -->
+        <div class="tab-content active" id="transactions">
+            <div class="content-section">
+                <h2 class="section-title">
+                    <i class="fas fa-plus"></i> Transaksi Baru
+                </h2>
+                <form id="transaction-form">
+                    <div class="form-group">
+                        <label for="transaction-date">Tanggal</label>
+                        <input type="date" id="transaction-date" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="transaction-type">Jenis</label>
+                        <select id="transaction-type" required>
+                            <option value="">Pilih Jenis</option>
+                            <option value="sale">Penjualan</option>
+                            <option value="purchase">Pembelian</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="transaction-product">Barang</label>
+                        <select id="transaction-product" required>
+                            <option value="">Pilih Barang</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="transaction-quantity">Jumlah</label>
+                        <input type="number" id="transaction-quantity" min="1" placeholder="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="transaction-price">Harga Satuan</label>
+                        <input type="number" id="transaction-price" min="0" placeholder="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="transaction-total">Total</label>
+                        <input type="number" id="transaction-total" min="0" placeholder="0" readonly>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Simpan Transaksi
+                    </button>
+                </form>
+            </div>
+            
+            <div class="content-section">
+                <h2 class="section-title">
+                    <i class="fas fa-history"></i> Riwayat
+                </h2>
+                <div class="table-container">
+                    <table id="transactions-table">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Jenis</th>
+                                <th>Barang</th>
+                                <th>Jml</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-list">
+                            <!-- Data akan diisi JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="empty-transactions" class="empty-state">
+                    <i class="fas fa-receipt"></i>
+                    <h3>Belum Ada Transaksi</h3>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TAB PRODUK -->
+        <div class="tab-content" id="products">
+            <div class="content-section">
+                <h2 class="section-title">
+                    <i class="fas fa-plus"></i> Tambah Barang
+                </h2>
+                <form id="product-form">
+                    <div class="form-group">
+                        <label for="product-name">Nama Barang</label>
+                        <input type="text" id="product-name" placeholder="Contoh: Rokok Sampoerna" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="product-category">Kategori</label>
+                        <select id="product-category" required>
+                            <option value="">Pilih Kategori</option>
+                            <option value="makanan">Makanan</option>
+                            <option value="minuman">Minuman</option>
+                            <option value="rokok">Rokok</option>
+                            <option value="sembako">Sembako</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="product-stock">Stok Awal</label>
+                        <input type="number" id="product-stock" min="0" placeholder="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="product-buy-price">Harga Beli</label>
+                        <input type="number" id="product-buy-price" min="0" placeholder="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="product-sell-price">Harga Jual</label>
+                        <input type="number" id="product-sell-price" min="0" placeholder="0" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Simpan Barang
+                    </button>
+                </form>
+            </div>
+            
+            <div class="content-section">
+                <h2 class="section-title">
+                    <i class="fas fa-boxes"></i> Daftar Barang
+                </h2>
+                <div class="table-container">
+                    <table id="products-table">
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th>Kategori</th>
+                                <th>Stok</th>
+                                <th>Harga</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-list">
+                            <!-- Data akan diisi JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="empty-products" class="empty-state">
+                    <i class="fas fa-box-open"></i>
+                    <h3>Belum Ada Barang</h3>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TAB LAPORAN -->
+        <div class="tab-content" id="reports">
+            <div class="content-section">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-pie"></i> Laporan
+                </h2>
+                
+                <div class="dashboard">
+                    <div class="card sales">
+                        <div class="card-header">
+                            <div class="card-title">TOTAL PENJUALAN</div>
+                        </div>
+                        <div class="card-value" id="report-sales">Rp 0</div>
+                    </div>
+                    
+                    <div class="card expenses">
+                        <div class="card-header">
+                            <div class="card-title">TOTAL PENGELUARAN</div>
+                        </div>
+                        <div class="card-value" id="report-expenses">Rp 0</div>
+                    </div>
+                </div>
+                
+                <div class="card profit">
+                    <div class="card-header">
+                        <div class="card-title">TOTAL KEUNTUNGAN</div>
+                    </div>
+                    <div class="card-value" id="report-profit">Rp 0</div>
+                </div>
+                
+                <div class="table-container" style="margin-top: 15px;">
+                    <table id="reports-table">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Jenis</th>
+                                <th>Barang</th>
+                                <th>Jml</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-list">
+                            <!-- Data akan diisi JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="empty-reports" class="empty-state">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>Tidak Ada Data</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="notification" class="notification"></div>
+
+    <script>
+        // Data Storage
+        let products = JSON.parse(localStorage.getItem('warungProducts')) || [];
+        let transactions = JSON.parse(localStorage.getItem('warungTransactions')) || [];
+        
+        // Initialize App
+        function initApp() {
+            // Set current date
+            const now = new Date();
+            document.getElementById('current-date').textContent = formatDate(now);
+            document.getElementById('transaction-date').valueAsDate = now;
+            
+            // Load data
+            loadProducts();
+            loadTransactions();
+            updateDashboard();
+            setupEventListeners();
+        }
+        
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                    
+                    this.classList.add('active');
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            // Transaction form
+            document.getElementById('transaction-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addTransaction();
+            });
+            
+            // Product form
+            document.getElementById('product-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addProduct();
+            });
+            
+            // Auto-calculate total
+            document.getElementById('transaction-quantity').addEventListener('input', calculateTotal);
+            document.getElementById('transaction-price').addEventListener('input', calculateTotal);
+        }
+        
+        // Format date
+        function formatDate(date) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('id-ID', options);
+        }
+        
+        // Calculate total
+        function calculateTotal() {
+            const quantity = parseInt(document.getElementById('transaction-quantity').value) || 0;
+            const price = parseInt(document.getElementById('transaction-price').value) || 0;
+            document.getElementById('transaction-total').value = quantity * price;
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Load products
+        function loadProducts() {
+            const productSelect = document.getElementById('transaction-product');
+            const productsList = document.getElementById('products-list');
+            
+            productSelect.innerHTML = '<option value="">Pilih Barang</option>';
+            productsList.innerHTML = '';
+            
+            products.forEach(product => {
+                // Add to select
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = product.name;
+                productSelect.appendChild(option);
+                
+                // Add to table
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.name}</td>
+                    <td><span class="badge badge-success">${product.category}</span></td>
+                    <td>${product.stock}</td>
+                    <td>${formatRupiah(product.sellPrice)}</td>
+                `;
+                productsList.appendChild(row);
+            });
+            
+            updateLowStockCount();
+        }
+        
+        // Load transactions
+        function loadTransactions() {
+            const transactionsList = document.getElementById('transactions-list');
+            transactionsList.innerHTML = '';
+            
+            transactions.forEach(transaction => {
+                const product = products.find(p => p.id == transaction.productId);
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${formatDisplayDate(transaction.date)}</td>
+                    <td>
+                        <span class="badge ${transaction.type === 'sale' ? 'badge-success' : 'badge-warning'}">
+                            ${transaction.type === 'sale' ? 'Jual' : 'Beli'}
+                        </span>
+                    </td>
+                    <td>${product ? product.name : 'N/A'}</td>
+                    <td>${transaction.quantity}</td>
+                    <td>${formatRupiah(transaction.total)}</td>
+                `;
+                
+                transactionsList.appendChild(row);
+            });
+            
+            // Show/hide empty state
+            document.getElementById('empty-transactions').style.display = 
+                transactions.length === 0 ? 'block' : 'none';
+        }
+        
+        // Add product
+        function addProduct() {
+            const product = {
+                id: Date.now(),
+                name: document.getElementById('product-name').value,
+                category: document.getElementById('product-category').value,
+                stock: parseInt(document.getElementById('product-stock').value),
+                buyPrice: parseInt(document.getElementById('product-buy-price').value),
+                sellPrice: parseInt(document.getElementById('product-sell-price').value)
+            };
+            
+            products.push(product);
+            localStorage.setItem('warungProducts', JSON.stringify(products));
+            
+            document.getElementById('product-form').reset();
+            loadProducts();
+            showNotification('Barang berhasil ditambahkan!');
+        }
+        
+        // Add transaction
+        function addTransaction() {
+            const date = document.getElementById('transaction-date').value;
+            const type = document.getElementById('transaction-type').value;
+            const productId = document.getElementById('transaction-product').value;
+            const quantity = parseInt(document.getElementById('transaction-quantity').value);
+            const price = parseInt(document.getElementById('transaction-price').value);
+            const total = parseInt(document.getElementById('transaction-total').value);
+            
+            // Validate
+            if (!productId) {
+                showNotification('Pilih barang terlebih dahulu!', 'error');
+                return;
+            }
+            
+            const productIndex = products.findIndex(p => p.id == productId);
+            if (productIndex === -1) {
+                showNotification('Barang tidak ditemukan!', 'error');
+                return;
+            }
+            
+            // Check stock for sales
+            if (type === 'sale' && products[productIndex].stock < quantity) {
+                showNotification('Stok tidak mencukupi!', 'error');
+                return;
+            }
+            
+            // Create transaction
+            const transaction = {
+                id: Date.now(),
+                date,
+                type,
+                productId,
+                quantity,
+                price,
+                total
+            };
+            
+            // Update stock
+            if (type === 'sale') {
+                products[productIndex].stock -= quantity;
+            } else {
+                products[productIndex].stock += quantity;
+            }
+            
+            transactions.push(transaction);
+            localStorage.setItem('warungTransactions', JSON.stringify(transactions));
+            localStorage.setItem('warungProducts', JSON.stringify(products));
+            
+            document.getElementById('transaction-form').reset();
+            document.getElementById('transaction-date').valueAsDate = new Date();
+            loadTransactions();
+            loadProducts();
+            updateDashboard();
+            showNotification('Transaksi berhasil disimpan!');
+        }
+        
+        // Update dashboard
+        function updateDashboard() {
+            const today = new Date().toISOString().split('T')[0];
+            let todaySales = 0;
+            let todayExpenses = 0;
+            
+            transactions.forEach(transaction => {
+                if (transaction.date === today) {
+                    if (transaction.type === 'sale') {
+                        todaySales += transaction.total;
+                    } else {
+                        todayExpenses += transaction.total;
+                    }
+                }
+            });
+            
+            const todayProfit = todaySales - todayExpenses;
+            
+            document.getElementById('today-sales').textContent = formatRupiah(todaySales);
+            document.getElementById('today-expenses').textContent = formatRupiah(todayExpenses);
+            document.getElementById('today-profit').textContent = formatRupiah(todayProfit);
+            
+            // Update reports too
+            updateReports();
+        }
+        
+        // Update reports
+        function updateReports() {
+            let totalSales = 0;
+            let totalExpenses = 0;
+            
+            transactions.forEach(transaction => {
+                if (transaction.type === 'sale') {
+                    totalSales += transaction.total;
+                } else {
+                    totalExpenses += transaction.total;
+                }
+            });
+            
+            const totalProfit = totalSales - totalExpenses;
+            
+            document.getElementById('report-sales').textContent = formatRupiah(totalSales);
+            document.getElementById('report-expenses').textContent = formatRupiah(totalExpenses);
+            document.getElementById('report-profit').textContent = formatRupiah(totalProfit);
+            
+            // Load report transactions
+            const reportsList = document.getElementById('reports-list');
+            reportsList.innerHTML = '';
+            
+            transactions.forEach(transaction => {
+                const product = products.find(p => p.id == transaction.productId);
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${formatDisplayDate(transaction.date)}</td>
+                    <td>
+                        <span class="badge ${transaction.type === 'sale' ? 'badge-success' : 'badge-warning'}">
+                            ${transaction.type === 'sale' ? 'Jual' : 'Beli'}
+                        </span>
+                    </td>
+                    <td>${product ? product.name : 'N/A'}</td>
+                    <td>${transaction.quantity}</td>
+                    <td>${formatRupiah(transaction.total)}</td>
+                `;
+                
+                reportsList.appendChild(row);
+            });
+        }
+        
+        // Update low stock count
+        function updateLowStockCount() {
+            const lowStockItems = products.filter(product => product.stock < 5);
+            document.getElementById('low-stock-count').textContent = `${lowStockItems.length} item`;
+        }
+        
+        // Format Rupiah
+        function formatRupiah(amount) {
+            return 'Rp ' + amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+        
+        // Format date for display
+        function formatDisplayDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' });
+        }
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
