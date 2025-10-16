@@ -103,6 +103,11 @@
             margin-bottom: 5px;
         }
         
+        .card-subvalue {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
         .sales .card-icon { background: #27ae60; }
         .expenses .card-icon { background: #e74c3c; }
         .profit .card-icon { background: #3498db; }
@@ -357,26 +362,29 @@
                     </div>
                 </div>
                 <div class="card-value" id="today-sales">Rp 0</div>
+                <div class="card-subvalue" id="today-items">0 item</div>
             </div>
             
             <div class="card expenses">
                 <div class="card-header">
-                    <div class="card-title">PENGELUARAN</div>
+                    <div class="card-title">MODAL</div>
                     <div class="card-icon">
                         <i class="fas fa-money-bill-wave"></i>
                     </div>
                 </div>
-                <div class="card-value" id="today-expenses">Rp 0</div>
+                <div class="card-value" id="today-cost">Rp 0</div>
+                <div class="card-subvalue" id="cost-items">0 item</div>
             </div>
             
             <div class="card profit">
                 <div class="card-header">
-                    <div class="card-title">KEUNTUNGAN</div>
+                    <div class="card-title">LABA BERSIH</div>
                     <div class="card-icon">
                         <i class="fas fa-chart-line"></i>
                     </div>
                 </div>
                 <div class="card-value" id="today-profit">Rp 0</div>
+                <div class="card-subvalue" id="profit-margin">0%</div>
             </div>
             
             <div class="card stock-alert">
@@ -387,6 +395,7 @@
                     </div>
                 </div>
                 <div class="card-value" id="low-stock-count">0 item</div>
+                <div class="card-subvalue">Perlu restock</div>
             </div>
         </div>
         
@@ -464,6 +473,7 @@
                                 <th>Barang</th>
                                 <th>Jml</th>
                                 <th>Total</th>
+                                <th>Laba</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -520,6 +530,13 @@
                         <input type="number" id="product-sell-price" min="0" placeholder="0" required>
                     </div>
                     
+                    <div class="form-group">
+                        <label>Laba per Item:</label>
+                        <div id="profit-per-item" style="padding: 10px; background: #f8f9fa; border-radius: 5px; font-weight: 600; color: #27ae60;">
+                            Rp 0
+                        </div>
+                    </div>
+                    
                     <button type="submit" class="btn btn-success" id="product-submit-btn">
                         <i class="fas fa-save"></i> Tambah Barang
                     </button>
@@ -541,8 +558,9 @@
                                 <th>Nama</th>
                                 <th>Kategori</th>
                                 <th>Stok</th>
-                                <th>Harga Beli</th>
-                                <th>Harga Jual</th>
+                                <th>Beli</th>
+                                <th>Jual</th>
+                                <th>Laba</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -562,7 +580,7 @@
         <div class="tab-content" id="reports">
             <div class="content-section">
                 <h2 class="section-title">
-                    <i class="fas fa-chart-pie"></i> Laporan
+                    <i class="fas fa-chart-pie"></i> Laporan Keuangan
                 </h2>
                 
                 <div class="dashboard">
@@ -571,21 +589,24 @@
                             <div class="card-title">TOTAL PENJUALAN</div>
                         </div>
                         <div class="card-value" id="report-sales">Rp 0</div>
+                        <div class="card-subvalue" id="report-sales-items">0 item</div>
                     </div>
                     
                     <div class="card expenses">
                         <div class="card-header">
-                            <div class="card-title">TOTAL PENGELUARAN</div>
+                            <div class="card-title">TOTAL MODAL</div>
                         </div>
-                        <div class="card-value" id="report-expenses">Rp 0</div>
+                        <div class="card-value" id="report-cost">Rp 0</div>
+                        <div class="card-subvalue" id="report-cost-items">0 item</div>
                     </div>
                 </div>
                 
                 <div class="card profit">
                     <div class="card-header">
-                        <div class="card-title">TOTAL KEUNTUNGAN</div>
+                        <div class="card-title">TOTAL LABA BERSIH</div>
                     </div>
                     <div class="card-value" id="report-profit">Rp 0</div>
+                    <div class="card-subvalue" id="report-profit-margin">Margin: 0%</div>
                 </div>
                 
                 <div class="table-container" style="margin-top: 15px;">
@@ -593,10 +614,11 @@
                         <thead>
                             <tr>
                                 <th>Tanggal</th>
-                                <th>Jenis</th>
                                 <th>Barang</th>
                                 <th>Jml</th>
-                                <th>Total</th>
+                                <th>Penjualan</th>
+                                <th>Modal</th>
+                                <th>Laba</th>
                             </tr>
                         </thead>
                         <tbody id="reports-list">
@@ -677,6 +699,10 @@
             document.getElementById('transaction-type').addEventListener('change', function() {
                 updateTransactionPrice();
             });
+            
+            // Calculate profit when prices change
+            document.getElementById('product-buy-price').addEventListener('input', calculateProfit);
+            document.getElementById('product-sell-price').addEventListener('input', calculateProfit);
         }
         
         // Format date
@@ -690,6 +716,27 @@
             const quantity = parseInt(document.getElementById('transaction-quantity').value) || 0;
             const price = parseInt(document.getElementById('transaction-price').value) || 0;
             document.getElementById('transaction-total').value = quantity * price;
+        }
+        
+        // Calculate profit per item
+        function calculateProfit() {
+            const buyPrice = parseInt(document.getElementById('product-buy-price').value) || 0;
+            const sellPrice = parseInt(document.getElementById('product-sell-price').value) || 0;
+            const profit = sellPrice - buyPrice;
+            const margin = buyPrice > 0 ? Math.round((profit / buyPrice) * 100) : 0;
+            
+            document.getElementById('profit-per-item').textContent = 
+                `Rp ${profit.toLocaleString()} (${margin}%)`;
+                
+            // Color code
+            const profitElement = document.getElementById('profit-per-item');
+            if (profit > 0) {
+                profitElement.style.color = '#27ae60';
+            } else if (profit < 0) {
+                profitElement.style.color = '#e74c3c';
+            } else {
+                profitElement.style.color = '#666';
+            }
         }
         
         // Update transaction price based on selected product and type
@@ -742,6 +789,10 @@
                 option.textContent = `${product.name} (Stok: ${product.stock})`;
                 productSelect.appendChild(option);
                 
+                // Calculate profit
+                const profit = product.sellPrice - product.buyPrice;
+                const margin = product.buyPrice > 0 ? Math.round((profit / product.buyPrice) * 100) : 0;
+                
                 // Add to table
                 const row = document.createElement('tr');
                 if (product.stock < 5) {
@@ -754,6 +805,9 @@
                     <td>${product.stock}</td>
                     <td>${formatRupiah(product.buyPrice)}</td>
                     <td>${formatRupiah(product.sellPrice)}</td>
+                    <td style="color: ${profit >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: 600;">
+                        ${formatRupiah(profit)} (${margin}%)
+                    </td>
                     <td class="action-buttons">
                         <button class="action-btn btn-edit" onclick="editProduct(${product.id})">
                             <i class="fas fa-edit"></i>
@@ -787,6 +841,12 @@
             
             sortedTransactions.forEach((transaction, index) => {
                 const product = products.find(p => p.id == transaction.productId);
+                let profit = 0;
+                
+                if (product && transaction.type === 'sale') {
+                    profit = (transaction.price - product.buyPrice) * transaction.quantity;
+                }
+                
                 const row = document.createElement('tr');
                 
                 row.innerHTML = `
@@ -799,6 +859,9 @@
                     <td>${product ? product.name : 'N/A'}</td>
                     <td>${transaction.quantity}</td>
                     <td>${formatRupiah(transaction.total)}</td>
+                    <td style="color: ${profit >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: 600;">
+                        ${transaction.type === 'sale' ? formatRupiah(profit) : '-'}
+                    </td>
                     <td class="action-buttons">
                         <button class="action-btn btn-delete" onclick="deleteTransaction(${index})">
                             <i class="fas fa-trash"></i>
@@ -889,6 +952,9 @@
                 document.getElementById('product-submit-btn').innerHTML = '<i class="fas fa-save"></i> Update Barang';
                 document.getElementById('product-cancel-btn').style.display = 'block';
                 
+                // Calculate and show profit
+                calculateProfit();
+                
                 // Switch to products tab
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
@@ -915,6 +981,8 @@
             document.getElementById('edit-product-id').value = '';
             document.getElementById('product-submit-btn').innerHTML = '<i class="fas fa-save"></i> Tambah Barang';
             document.getElementById('product-cancel-btn').style.display = 'none';
+            document.getElementById('profit-per-item').textContent = 'Rp 0';
+            document.getElementById('profit-per-item').style.color = '#666';
         }
         
         // Add transaction
@@ -1004,23 +1072,34 @@
         function updateDashboard() {
             const today = new Date().toISOString().split('T')[0];
             let todaySales = 0;
-            let todayExpenses = 0;
+            let todayCost = 0;
+            let todayItems = 0;
+            let costItems = 0;
             
             transactions.forEach(transaction => {
                 if (transaction.date === today) {
+                    const product = products.find(p => p.id == transaction.productId);
+                    
                     if (transaction.type === 'sale') {
                         todaySales += transaction.total;
-                    } else {
-                        todayExpenses += transaction.total;
+                        todayItems += transaction.quantity;
+                        if (product) {
+                            todayCost += product.buyPrice * transaction.quantity;
+                            costItems += transaction.quantity;
+                        }
                     }
                 }
             });
             
-            const todayProfit = todaySales - todayExpenses;
+            const todayProfit = todaySales - todayCost;
+            const profitMargin = todaySales > 0 ? Math.round((todayProfit / todaySales) * 100) : 0;
             
             document.getElementById('today-sales').textContent = formatRupiah(todaySales);
-            document.getElementById('today-expenses').textContent = formatRupiah(todayExpenses);
+            document.getElementById('today-cost').textContent = formatRupiah(todayCost);
             document.getElementById('today-profit').textContent = formatRupiah(todayProfit);
+            document.getElementById('today-items').textContent = `${todayItems} item`;
+            document.getElementById('cost-items').textContent = `${costItems} item`;
+            document.getElementById('profit-margin').textContent = `${profitMargin}% margin`;
             
             // Update reports too
             updateReports();
@@ -1029,21 +1108,32 @@
         // Update reports
         function updateReports() {
             let totalSales = 0;
-            let totalExpenses = 0;
+            let totalCost = 0;
+            let totalSalesItems = 0;
+            let totalCostItems = 0;
             
             transactions.forEach(transaction => {
+                const product = products.find(p => p.id == transaction.productId);
+                
                 if (transaction.type === 'sale') {
                     totalSales += transaction.total;
-                } else {
-                    totalExpenses += transaction.total;
+                    totalSalesItems += transaction.quantity;
+                    if (product) {
+                        totalCost += product.buyPrice * transaction.quantity;
+                        totalCostItems += transaction.quantity;
+                    }
                 }
             });
             
-            const totalProfit = totalSales - totalExpenses;
+            const totalProfit = totalSales - totalCost;
+            const profitMargin = totalSales > 0 ? Math.round((totalProfit / totalSales) * 100) : 0;
             
             document.getElementById('report-sales').textContent = formatRupiah(totalSales);
-            document.getElementById('report-expenses').textContent = formatRupiah(totalExpenses);
+            document.getElementById('report-cost').textContent = formatRupiah(totalCost);
             document.getElementById('report-profit').textContent = formatRupiah(totalProfit);
+            document.getElementById('report-sales-items').textContent = `${totalSalesItems} item`;
+            document.getElementById('report-cost-items').textContent = `${totalCostItems} item`;
+            document.getElementById('report-profit-margin').textContent = `Margin: ${profitMargin}%`;
             
             // Load report transactions
             const reportsList = document.getElementById('reports-list');
@@ -1056,20 +1146,30 @@
             
             document.getElementById('empty-reports').style.display = 'none';
             
-            transactions.forEach(transaction => {
+            // Only show sales transactions in report
+            const salesTransactions = transactions.filter(t => t.type === 'sale');
+            
+            salesTransactions.forEach(transaction => {
                 const product = products.find(p => p.id == transaction.productId);
+                let cost = 0;
+                let profit = 0;
+                
+                if (product) {
+                    cost = product.buyPrice * transaction.quantity;
+                    profit = transaction.total - cost;
+                }
+                
                 const row = document.createElement('tr');
                 
                 row.innerHTML = `
                     <td>${formatDisplayDate(transaction.date)}</td>
-                    <td>
-                        <span class="badge ${transaction.type === 'sale' ? 'badge-success' : 'badge-warning'}">
-                            ${transaction.type === 'sale' ? 'Jual' : 'Beli'}
-                        </span>
-                    </td>
                     <td>${product ? product.name : 'N/A'}</td>
                     <td>${transaction.quantity}</td>
                     <td>${formatRupiah(transaction.total)}</td>
+                    <td>${formatRupiah(cost)}</td>
+                    <td style="color: ${profit >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: 600;">
+                        ${formatRupiah(profit)}
+                    </td>
                 `;
                 
                 reportsList.appendChild(row);
