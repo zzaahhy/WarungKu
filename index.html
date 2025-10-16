@@ -174,7 +174,7 @@
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 8px;
-            font-size: 16px; /* Prevent zoom on iOS */
+            font-size: 16px;
             -webkit-appearance: none;
         }
         
@@ -196,6 +196,11 @@
         
         .btn-success {
             background: #27ae60;
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #f39c12;
             color: white;
         }
         
@@ -221,8 +226,6 @@
         th {
             background: #f8f9fa;
             font-weight: 600;
-            position: sticky;
-            left: 0;
         }
         
         /* NOTIFICATION */
@@ -247,6 +250,14 @@
             background: #27ae60;
         }
         
+        .notification.warning {
+            background: #f39c12;
+        }
+        
+        .notification.error {
+            background: #e74c3c;
+        }
+        
         /* UTILITY CLASSES */
         .empty-state {
             text-align: center;
@@ -269,6 +280,26 @@
         
         .badge-success { background: #d4edda; color: #155724; }
         .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        
+        .stock-low { background: #fff3cd !important; }
+        .stock-out { background: #f8d7da !important; }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .action-btn {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+        
+        .btn-edit { background: #3498db; color: white; }
+        .btn-delete { background: #e74c3c; color: white; }
         
         /* TOUCH FRIENDLY */
         button:active {
@@ -433,6 +464,7 @@
                                 <th>Barang</th>
                                 <th>Jml</th>
                                 <th>Total</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="transactions-list">
@@ -451,9 +483,11 @@
         <div class="tab-content" id="products">
             <div class="content-section">
                 <h2 class="section-title">
-                    <i class="fas fa-plus"></i> Tambah Barang
+                    <i class="fas fa-plus"></i> Tambah/Update Barang
                 </h2>
                 <form id="product-form">
+                    <input type="hidden" id="edit-product-id">
+                    
                     <div class="form-group">
                         <label for="product-name">Nama Barang</label>
                         <input type="text" id="product-name" placeholder="Contoh: Rokok Sampoerna" required>
@@ -467,11 +501,12 @@
                             <option value="minuman">Minuman</option>
                             <option value="rokok">Rokok</option>
                             <option value="sembako">Sembako</option>
+                            <option value="lainnya">Lainnya</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
-                        <label for="product-stock">Stok Awal</label>
+                        <label for="product-stock">Stok</label>
                         <input type="number" id="product-stock" min="0" placeholder="0" required>
                     </div>
                     
@@ -485,8 +520,12 @@
                         <input type="number" id="product-sell-price" min="0" placeholder="0" required>
                     </div>
                     
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-save"></i> Simpan Barang
+                    <button type="submit" class="btn btn-success" id="product-submit-btn">
+                        <i class="fas fa-save"></i> Tambah Barang
+                    </button>
+                    
+                    <button type="button" class="btn btn-warning" id="product-cancel-btn" style="display: none;">
+                        <i class="fas fa-times"></i> Batal Edit
                     </button>
                 </form>
             </div>
@@ -502,7 +541,9 @@
                                 <th>Nama</th>
                                 <th>Kategori</th>
                                 <th>Stok</th>
-                                <th>Harga</th>
+                                <th>Harga Beli</th>
+                                <th>Harga Jual</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="products-list">
@@ -615,12 +656,27 @@
             // Product form
             document.getElementById('product-form').addEventListener('submit', function(e) {
                 e.preventDefault();
-                addProduct();
+                addOrUpdateProduct();
+            });
+            
+            // Cancel edit button
+            document.getElementById('product-cancel-btn').addEventListener('click', function() {
+                resetProductForm();
             });
             
             // Auto-calculate total
             document.getElementById('transaction-quantity').addEventListener('input', calculateTotal);
             document.getElementById('transaction-price').addEventListener('input', calculateTotal);
+            
+            // Auto-update price when product selected
+            document.getElementById('transaction-product').addEventListener('change', function() {
+                updateTransactionPrice();
+            });
+            
+            // Auto-update price when type changed
+            document.getElementById('transaction-type').addEventListener('change', function() {
+                updateTransactionPrice();
+            });
         }
         
         // Format date
@@ -634,6 +690,23 @@
             const quantity = parseInt(document.getElementById('transaction-quantity').value) || 0;
             const price = parseInt(document.getElementById('transaction-price').value) || 0;
             document.getElementById('transaction-total').value = quantity * price;
+        }
+        
+        // Update transaction price based on selected product and type
+        function updateTransactionPrice() {
+            const productId = document.getElementById('transaction-product').value;
+            const type = document.getElementById('transaction-type').value;
+            const product = products.find(p => p.id == productId);
+            
+            if (product && type) {
+                const priceField = document.getElementById('transaction-price');
+                if (type === 'sale') {
+                    priceField.value = product.sellPrice;
+                } else if (type === 'purchase') {
+                    priceField.value = product.buyPrice;
+                }
+                calculateTotal();
+            }
         }
         
         // Show notification
@@ -655,21 +728,42 @@
             productSelect.innerHTML = '<option value="">Pilih Barang</option>';
             productsList.innerHTML = '';
             
+            if (products.length === 0) {
+                document.getElementById('empty-products').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('empty-products').style.display = 'none';
+            
             products.forEach(product => {
                 // Add to select
                 const option = document.createElement('option');
                 option.value = product.id;
-                option.textContent = product.name;
+                option.textContent = `${product.name} (Stok: ${product.stock})`;
                 productSelect.appendChild(option);
                 
                 // Add to table
                 const row = document.createElement('tr');
+                if (product.stock < 5) {
+                    row.className = product.stock === 0 ? 'stock-out' : 'stock-low';
+                }
+                
                 row.innerHTML = `
                     <td>${product.name}</td>
                     <td><span class="badge badge-success">${product.category}</span></td>
                     <td>${product.stock}</td>
+                    <td>${formatRupiah(product.buyPrice)}</td>
                     <td>${formatRupiah(product.sellPrice)}</td>
+                    <td class="action-buttons">
+                        <button class="action-btn btn-edit" onclick="editProduct(${product.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn btn-delete" onclick="deleteProduct(${product.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
                 `;
+                
                 productsList.appendChild(row);
             });
             
@@ -681,7 +775,17 @@
             const transactionsList = document.getElementById('transactions-list');
             transactionsList.innerHTML = '';
             
-            transactions.forEach(transaction => {
+            if (transactions.length === 0) {
+                document.getElementById('empty-transactions').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('empty-transactions').style.display = 'none';
+            
+            // Sort by date (newest first)
+            const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            sortedTransactions.forEach((transaction, index) => {
                 const product = products.find(p => p.id == transaction.productId);
                 const row = document.createElement('tr');
                 
@@ -695,33 +799,122 @@
                     <td>${product ? product.name : 'N/A'}</td>
                     <td>${transaction.quantity}</td>
                     <td>${formatRupiah(transaction.total)}</td>
+                    <td class="action-buttons">
+                        <button class="action-btn btn-delete" onclick="deleteTransaction(${index})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
                 `;
                 
                 transactionsList.appendChild(row);
             });
-            
-            // Show/hide empty state
-            document.getElementById('empty-transactions').style.display = 
-                transactions.length === 0 ? 'block' : 'none';
         }
         
-        // Add product
-        function addProduct() {
-            const product = {
-                id: Date.now(),
-                name: document.getElementById('product-name').value,
-                category: document.getElementById('product-category').value,
-                stock: parseInt(document.getElementById('product-stock').value),
-                buyPrice: parseInt(document.getElementById('product-buy-price').value),
-                sellPrice: parseInt(document.getElementById('product-sell-price').value)
-            };
+        // Add or Update Product
+        function addOrUpdateProduct() {
+            const name = document.getElementById('product-name').value.trim();
+            const category = document.getElementById('product-category').value;
+            const stock = parseInt(document.getElementById('product-stock').value) || 0;
+            const buyPrice = parseInt(document.getElementById('product-buy-price').value) || 0;
+            const sellPrice = parseInt(document.getElementById('product-sell-price').value) || 0;
+            const editId = document.getElementById('edit-product-id').value;
             
-            products.push(product);
+            // Check if product with same name already exists (case insensitive)
+            const existingProductIndex = products.findIndex(p => 
+                p.name.toLowerCase() === name.toLowerCase() && p.id != editId
+            );
+            
+            if (existingProductIndex !== -1 && !editId) {
+                // Product exists, ask to update stock
+                if (confirm(`Barang "${name}" sudah ada. Update stok saja?`)) {
+                    const existingProduct = products[existingProductIndex];
+                    existingProduct.stock += stock;
+                    existingProduct.buyPrice = buyPrice;
+                    existingProduct.sellPrice = sellPrice;
+                    
+                    localStorage.setItem('warungProducts', JSON.stringify(products));
+                    resetProductForm();
+                    loadProducts();
+                    showNotification('Stok barang berhasil diupdate!', 'warning');
+                    return;
+                } else {
+                    return;
+                }
+            }
+            
+            if (editId) {
+                // Update existing product
+                const productIndex = products.findIndex(p => p.id == editId);
+                if (productIndex !== -1) {
+                    products[productIndex] = {
+                        ...products[productIndex],
+                        name,
+                        category,
+                        stock,
+                        buyPrice,
+                        sellPrice
+                    };
+                    showNotification('Barang berhasil diupdate!', 'success');
+                }
+            } else {
+                // Add new product
+                const product = {
+                    id: Date.now(),
+                    name,
+                    category,
+                    stock,
+                    buyPrice,
+                    sellPrice
+                };
+                products.push(product);
+                showNotification('Barang berhasil ditambahkan!', 'success');
+            }
+            
             localStorage.setItem('warungProducts', JSON.stringify(products));
-            
-            document.getElementById('product-form').reset();
+            resetProductForm();
             loadProducts();
-            showNotification('Barang berhasil ditambahkan!');
+        }
+        
+        // Edit product
+        function editProduct(productId) {
+            const product = products.find(p => p.id == productId);
+            if (product) {
+                document.getElementById('edit-product-id').value = product.id;
+                document.getElementById('product-name').value = product.name;
+                document.getElementById('product-category').value = product.category;
+                document.getElementById('product-stock').value = product.stock;
+                document.getElementById('product-buy-price').value = product.buyPrice;
+                document.getElementById('product-sell-price').value = product.sellPrice;
+                
+                document.getElementById('product-submit-btn').innerHTML = '<i class="fas fa-save"></i> Update Barang';
+                document.getElementById('product-cancel-btn').style.display = 'block';
+                
+                // Switch to products tab
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                document.querySelector('.tab[data-tab="products"]').classList.add('active');
+                document.getElementById('products').classList.add('active');
+                
+                document.getElementById('product-name').focus();
+            }
+        }
+        
+        // Delete product
+        function deleteProduct(productId) {
+            if (confirm('Apakah Anda yakin ingin menghapus barang ini?')) {
+                products = products.filter(p => p.id !== productId);
+                localStorage.setItem('warungProducts', JSON.stringify(products));
+                loadProducts();
+                showNotification('Barang berhasil dihapus!', 'success');
+            }
+        }
+        
+        // Reset product form
+        function resetProductForm() {
+            document.getElementById('product-form').reset();
+            document.getElementById('edit-product-id').value = '';
+            document.getElementById('product-submit-btn').innerHTML = '<i class="fas fa-save"></i> Tambah Barang';
+            document.getElementById('product-cancel-btn').style.display = 'none';
         }
         
         // Add transaction
@@ -729,9 +922,9 @@
             const date = document.getElementById('transaction-date').value;
             const type = document.getElementById('transaction-type').value;
             const productId = document.getElementById('transaction-product').value;
-            const quantity = parseInt(document.getElementById('transaction-quantity').value);
-            const price = parseInt(document.getElementById('transaction-price').value);
-            const total = parseInt(document.getElementById('transaction-total').value);
+            const quantity = parseInt(document.getElementById('transaction-quantity').value) || 0;
+            const price = parseInt(document.getElementById('transaction-price').value) || 0;
+            const total = parseInt(document.getElementById('transaction-total').value) || 0;
             
             // Validate
             if (!productId) {
@@ -779,6 +972,32 @@
             loadProducts();
             updateDashboard();
             showNotification('Transaksi berhasil disimpan!');
+        }
+        
+        // Delete transaction
+        function deleteTransaction(index) {
+            if (confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
+                const transaction = transactions[index];
+                
+                // Restore product stock
+                const productIndex = products.findIndex(p => p.id == transaction.productId);
+                if (productIndex !== -1) {
+                    if (transaction.type === 'sale') {
+                        products[productIndex].stock += transaction.quantity;
+                    } else {
+                        products[productIndex].stock -= transaction.quantity;
+                    }
+                }
+                
+                transactions.splice(index, 1);
+                localStorage.setItem('warungTransactions', JSON.stringify(transactions));
+                localStorage.setItem('warungProducts', JSON.stringify(products));
+                
+                loadTransactions();
+                loadProducts();
+                updateDashboard();
+                showNotification('Transaksi berhasil dihapus!');
+            }
         }
         
         // Update dashboard
@@ -830,6 +1049,13 @@
             const reportsList = document.getElementById('reports-list');
             reportsList.innerHTML = '';
             
+            if (transactions.length === 0) {
+                document.getElementById('empty-reports').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('empty-reports').style.display = 'none';
+            
             transactions.forEach(transaction => {
                 const product = products.find(p => p.id == transaction.productId);
                 const row = document.createElement('tr');
@@ -871,5 +1097,4 @@
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
-
 </html>
